@@ -137,6 +137,133 @@ Your backend is responsible for:
   - Verifying ID Token with Google servers
   - Creating new user or returning existing user session
   - Sending your app's session token back to the app
+
   Without backend verification, you only have a Google account object in the app; you cannot securely manage user sessions.
 
 <br><br><br><br>
+
+
+# 🍏 Apple Sign-In Integration on iOS
+
+Apple Sign-In allows users to **sign in or register** in your app using their Apple ID.  
+It provides basic user information like **email, full name**, and a **unique user identifier (`userId`)** to verify the user on your backend.
+
+---
+
+## 1️⃣ What is Apple Sign-In & How It Works
+
+Apple Sign-In is an **OAuth 2.0 authentication system** that lets users sign in **without creating a separate password** for your app.  
+Your backend can use the **userId** or **identity token** received from Apple to authenticate the user.  
+
+- Can be used for **Sign Up** (new user) or **Login** (existing user)  
+- Provides **email and full name** (first time only; later sign-ins may not return name/email)  
+- Does **not provide phone number** → ask user separately if needed  
+
+> If your app requires data not provided by Apple, you must ask the user to fill it after signing in.
+
+---
+
+<br>
+
+## 2️⃣ Requirements
+
+- iOS 13+  
+- Xcode 13+  
+- Apple Developer Account  
+- Sign in with Apple enabled for your app  
+- Real device for testing (Simulator can show button but requires real device for full login)  
+
+---
+
+<br>
+
+## 3️⃣ Setup Steps in Xcode
+
+1. Open your project → select your Target  
+2. Go to **Signing & Capabilities** → click **+ Capability** → add **Sign in with Apple**  
+3. Make sure your **Apple Developer account** is connected and Apple ID is active  
+4. Backend should store the `userId` for returning users  
+
+---
+
+<br>
+
+## 4️⃣ Swift Sample File – Apple Sign-In Manager / ViewController
+
+```swift
+import UIKit
+import AuthenticationServices
+
+class LoginVC: UIViewController {
+@IBOutlet weak var appleButton: UIButton!
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+}
+
+//MARK: - Apple Action -
+extension LoginVC {
+    @IBAction func AppleButtonAction(_ sender: Any) {
+        
+        let appleProvider = ASAuthorizationAppleIDProvider()
+        let request = appleProvider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        controller.performRequests()
+    }
+}
+
+// MARK: - ASAuthorizationControllerDelegate & PresentationContextProviding
+extension LoginVC: ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    
+    // Provide window for the Apple Sign-In popup
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        return view.window!
+    }
+    
+    // Called when user successfully signs in
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        if let appleIdCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
+            let userId = appleIdCredential.user // Unique Apple ID for this app
+            let fullName = appleIdCredential.fullName // User's full name
+            let email = appleIdCredential.email ?? "No Email" // User email
+            
+            print("User Apple ID:", userId)
+            print("User Name:", fullName ?? "No Name")
+            print("User Email:", email)
+            
+            // ✅ Send userId or identityToken to backend
+            // Backend stores userId to recognize returning users
+        }
+    }
+    
+    // Called when Sign in with Apple fails
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        print("Sign in with Apple failed:", error.localizedDescription)
+    }
+}
+```
+
+<br>
+
+## 5️⃣ Summary 
+Provides user info: userId, full name, email
+  - Does not provide phone number → ask separately if needed
+  - Can be used for both Login and Sign Up flows
+
+Your backend is responsible for:
+  - Storing userId to recognize returning users
+  - Optionally verifying identity token with Apple servers
+  - Creating new user or returning existing user session
+  - Sending your app's session token back to the app
+
+  Without backend verification, you only have an Apple account object in the app; you cannot securely manage user sessions.
+
+<br><br><br><br>
+
+
+
