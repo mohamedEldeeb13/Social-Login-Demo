@@ -265,5 +265,179 @@ Your backend is responsible for:
 
 <br><br><br><br>
 
+# 🔵 Facebook Login Integration on iOS
 
+Facebook Login allows users to **sign in or register** in your app using their Facebook account.  
+It provides user information like **email, name, profile picture**, and an **access token** that you send to your backend for verification.
+
+---
+
+## 1️⃣ What is Facebook Login & How It Works
+
+Facebook Login is an **OAuth 2.0 authentication system** that lets users log into your app using their Facebook account.  
+The app receives an **access token**, which your server can verify using the Facebook API.
+
+- Can be used for **Sign Up** (new user) or **Login** (existing user)  
+- Provides **email, full name, profile picture URL**  
+- Phone number is not guaranteed → ask separately if required  
+
+> If your app needs additional data not provided by Facebook, you must ask the user after authentication.
+
+---
+
+<br>
+
+## 2️⃣ Requirements
+
+- iOS 13+  
+- Xcode 13+  
+- Facebook Developer Account  
+- Facebook App configured with Bundle ID  
+- Facebook SDK installed via SPM / CocoaPods  
+
+---
+
+<br>
+
+## 3️⃣ Setup on Facebook Developer Console
+
+1. Go to **Facebook Developer Dashboard**
+2. Create a **New App**
+3. Enable **Facebook Login**
+4. Add your **Bundle ID** under iOS settings
+5. Copy your **App ID** and **Client Token**
+6. Configure your **Valid OAuth Redirect URIs**  
+
+---
+
+<br>
+
+## 4️⃣ Info.plist Configuration
+
+Add the required Facebook keys:
+
+```xml
+<key>FacebookAppID</key>
+<string>YOUR_FACEBOOK_APP_ID</string>
+
+<key>FacebookClientToken</key>
+<string>YOUR_FACEBOOK_CLIENT_TOKEN</string>
+
+<key>FacebookDisplayName</key>
+<string>YOUR_APP_NAME</string>
+
+<key>LSApplicationQueriesSchemes</key>
+<array>
+    <string>fbapi</string>
+    <string>fb-messenger-share-api</string>
+    <string>fbshareextension</string>
+</array>
+
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleURLSchemes</key>
+    <array>
+        <string>fbYOUR_FACEBOOK_APP_ID</string>
+    </array>
+  </dict>
+</array>
+```
+
+<br>
+
+## 5️⃣ AppDelegate Setup
+```swift
+import FBSDKCoreKit
+
+func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
+) -> Bool {
+
+    ApplicationDelegate.shared.application(
+        application,
+        didFinishLaunchingWithOptions: launchOptions
+    )
+    
+    return true
+}
+
+func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+) -> Bool {
+
+    return ApplicationDelegate.shared.application(
+        app,
+        open: url,
+        sourceApplication: options[.sourceApplication] as? String,
+        annotation: options[.annotation]
+    )
+}
+```
+
+<br>
+
+## 6️⃣ Facebook Login Example (ViewController)
+```swift
+import UIKit
+import FBSDKLoginKit
+
+class LoginVC: UIViewController {
+@IBOutlet weak var facebookButton: UIButton!
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        if let token = AccessToken.current, !token.isExpired {
+            // User is logged in, do work such as go to next view controller.
+        }
+    }
+}
+
+//MARK: - Facebook Action -
+extension LoginVC {
+    @IBAction func facebookButtonAction(_ sender: Any) {
+        
+        let loginManager = LoginManager()
+        guard let configuration = LoginConfiguration(permissions: ["public_profile", "email"], tracking: .limited) else {return}
+        
+        loginManager.logIn(configuration: configuration) { result in
+            switch result {
+            case .cancelled, .failed:
+                return
+            case .success:
+                print(Profile.current?.userID ?? "No User ID")
+                print(Profile.current?.name ?? "No name")
+                print(Profile.current?.lastName ?? "No last name")
+                print(Profile.current?.firstName ?? "No first name")
+                print(Profile.current?.imageURL ?? "No image url")
+            }
+        }
+    }
+}
+```
+
+<br>
+
+## 7️⃣ Summary
+
+Provides user info:
+  - Name
+  - Email
+  - Profile picture
+  - Facebook access token
+
+Used for:
+  - Sign Up (new user)
+  - Login (existing user)
+
+Backend Responsibilities:
+  - Verify access token using Facebook API
+  - Create or authenticate user
+  - Return your own session token to the app
+
+Without backend verification, your app cannot securely authenticate the user.
+
+<br><br><br><br>
 
