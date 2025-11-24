@@ -7,6 +7,7 @@
 
 import UIKit
 import GoogleSignIn
+import FBSDKCoreKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -16,18 +17,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        // ⚡️ Set Google Configuration
+        // -------------------------
+        // 🔵 Facebook Configuration
+        // -------------------------
+        ApplicationDelegate.shared.application(
+            application,
+            didFinishLaunchingWithOptions: launchOptions
+        )
+        
+        
+        // -------------------------
+        // 🔴 Google Configuration
+        // -------------------------
         if let clientID = Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String {
             GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
         } else {
             print("❌ Missing GIDClientID in Info.plist")
         }
         
-        // Restore previous sign-in (optional)
+        
+        // Restore previous sign-in (Optional)
         GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
             if let user = user {
                 print("User already signed in:", user.profile?.name ?? "")
-                // Navigate to Home Screen
             } else {
                 print("Not signed in yet")
             }
@@ -35,20 +47,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
     
+    // -------------------------------------------------------
+    // 🔗 Combined URL Handler for Facebook & Google
+    // -------------------------------------------------------
     func application(
         _ app: UIApplication,
-        open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+        open url: URL,
+        options: [UIApplication.OpenURLOptionsKey : Any] = [:]
     ) -> Bool {
-        var handled: Bool
         
-        handled = GIDSignIn.sharedInstance.handle(url)
-        if handled {
+        // 1️⃣ Try Facebook
+        if ApplicationDelegate.shared.application(
+            app,
+            open: url,
+            sourceApplication: options[.sourceApplication] as? String,
+            annotation: options[.annotation]
+        ) {
             return true
         }
         
-        // Handle other custom URL types.
+        // 2️⃣ Try Google
+        if GIDSignIn.sharedInstance.handle(url) {
+            return true
+        }
         
-        // If not handled by this app, return false.
+        // Not handled
         return false
     }
     
@@ -64,7 +87,5 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // If any sessions were discarded while the application was not running, this will be called shortly after application:didFinishLaunchingWithOptions.
         // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
     }
-    
-    
 }
 

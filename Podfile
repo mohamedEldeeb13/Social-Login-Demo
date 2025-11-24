@@ -17,5 +17,6 @@ target 'Social Login Demo' do
   end
 
 pod 'GoogleSignIn'
+pod 'FBSDKLoginKit'
 
 end

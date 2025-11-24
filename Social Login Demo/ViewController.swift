@@ -8,17 +8,24 @@
 import UIKit
 import GoogleSignIn
 import AuthenticationServices
+import FBSDKCoreKit
+import FBSDKLoginKit
 
 class ViewController: UIViewController{
     
     //MARK: - IBOutlets -
     @IBOutlet weak var googleButton: UIButton!
     @IBOutlet weak var appleButton: UIButton!
+    @IBOutlet weak var facebookButton: UIButton!
     
     //MARK: - Life cycle -
     override func viewDidLoad() {
         super.viewDidLoad()
         configuration()
+        
+        if let token = AccessToken.current, !token.isExpired {
+            // User is logged in, do work such as go to next view controller.
+        }
     }
 }
 
@@ -29,7 +36,7 @@ extension ViewController {
     }
     
     private func setUpInitialUI(){
-        let buttons: [UIButton] = [googleButton, appleButton]
+        let buttons: [UIButton] = [googleButton, appleButton, facebookButton]
         buttons.forEach { button in
             button.layer.cornerRadius = 10
             button.layer.borderWidth = 1
@@ -87,5 +94,26 @@ extension ViewController: ASAuthorizationControllerDelegate, ASAuthorizationCont
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
         print("Sign in with Apple failed:", error.localizedDescription)
     }
-    
+}
+
+//MARK: - Facebook Action -
+extension ViewController {
+    @IBAction func facebookButtonAction(_ sender: Any) {
+        
+        let loginManager = LoginManager()
+        guard let configuration = LoginConfiguration(permissions: ["public_profile", "email"], tracking: .limited) else {return}
+        
+        loginManager.logIn(configuration: configuration) { result in
+            switch result {
+            case .cancelled, .failed:
+                return
+            case .success:
+                print(Profile.current?.userID ?? "No User ID")
+                print(Profile.current?.name ?? "No name")
+                print(Profile.current?.lastName ?? "No last name")
+                print(Profile.current?.firstName ?? "No first name")
+                print(Profile.current?.imageURL ?? "No image url")
+            }
+        }
+    }
 }
